@@ -739,7 +739,6 @@ export function SurvivorPanel({
                 onClick={() => {
                   // Create a basic scavenger survivor
                   const newSurvivor = {
-                    id: `survivor-${Date.now()}`,
                     name: "Scout",
                     level: 1,
                     health: 100,
@@ -750,8 +749,8 @@ export function SurvivorPanel({
                     isActive: true,
                   }
 
-                  // Call onBuySurvivor but without deducting any cost
-                  onBuySurvivor()
+                  // Use onBuyFromSecondary with price 0 to add the free survivor
+                  onBuyFromSecondary(newSurvivor, 0)
                 }}
               >
                 Claim Free Survivor
