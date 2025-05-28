@@ -270,9 +270,6 @@ export default function GameDashboard() {
   useEffect(() => {
     const timer = setInterval(() => {
       setGameState((prev) => {
-        // Calculate the appropriate duration based on whether it's day or night
-        const timeLimit = prev.isDay ? 300 : calculateNightDuration(prev.dayCount)
-
         // Check if we're transitioning from night to day (when timer hits 0 and it's night)
         const isNightToDayTransition = prev.timeRemaining <= 0 && !prev.isDay
 
@@ -367,18 +364,27 @@ export default function GameDashboard() {
             ...prev,
             timeRemaining: 300, // Reset timer for day phase
             isDay: true, // Switch to day
-            dayCount: prev.dayCount + 1, // Increment day count
+            dayCount: prev.dayCount + 1, // Increment day count after night phase is complete
             resources: newResources,
             baseHealth: newBaseHealth,
             survivors: newSurvivors,
+          }
+        } else if (prev.timeRemaining <= 0 && prev.isDay) {
+          // Day to night transition
+          // Calculate the night duration based on the current day
+          const nightDuration = calculateNightDuration(prev.dayCount)
+
+          return {
+            ...prev,
+            timeRemaining: nightDuration, // Set timer to calculated night duration
+            isDay: false, // Switch to night
+            // Don't increment day count here - day only changes after night phase
           }
         } else {
           // Normal timer tick
           return {
             ...prev,
-            timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : timeLimit,
-            isDay: prev.timeRemaining > 0 ? prev.isDay : !prev.isDay,
-            dayCount: prev.timeRemaining > 0 ? prev.dayCount : prev.dayCount + (prev.isDay ? 1 : 0),
+            timeRemaining: prev.timeRemaining - 1,
           }
         }
       })
