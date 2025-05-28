@@ -26,6 +26,7 @@ import { BaseBuilder } from "./base-builder"
 import type { Survivor } from "../types/game"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 // Default initial game state
 const initialGameState: GameState = {
@@ -133,39 +134,28 @@ const baseLevels = [
   },
 ]
 
-// Night phase rules
-const nightPhaseRules = {
-  // Health depletion
-  survivorHealthDepletion: {
-    minPercent: 10, // Minimum percent of health depleted per night
-    maxPercent: 20, // Maximum percent of health depleted per night
-  },
-
-  // Resource depletion
+// Night time survival rules
+const nightTimeRules = {
+  // Resource depletion rules
   resourceDepletion: {
-    // Without a base
-    noBase: {
-      ammunitionPerSurvivor: {
-        min: 2, // Minimum ammunition used per survivor
-        max: 5, // Maximum ammunition used per survivor
-      },
-    },
-
-    // With a base
-    withBase: {
-      baseHealthReduction: {
-        base: 10, // Base amount of health reduction
-        perLevel: 5, // Additional reduction per base level
-        survivorDefenseValue: 3, // Each active survivor reduces damage by this amount
-      },
-    },
+    withBase:
+      "When a player has a base, zombies attack the base during the night and resources are depleted based on the base's resource requirements.",
+    withoutBase: "Without a base, only ammunition is depleted from the inventory during the night.",
+    ammunitionUse: "Ammunition is required to fight zombies effectively during the night.",
   },
-
-  // Combat rules (for future implementation)
+  // Combat rules
   combat: {
-    // If ammunition runs out, survivors can't shoot zombies
-    // Each survivor needs ammunition to defend during the night
-    // Combat sequence will be implemented in future updates
+    ranged:
+      "Survivors use ammunition to fight zombies at range, which is more effective and results in less health loss.",
+    melee:
+      "If a player runs out of ammunition, survivors switch to melee combat, which is less effective and results in more health loss.",
+    healthLoss: "Survivor health loss during the night is reduced by their defense stat.",
+  },
+  // Base damage rules
+  baseDamage: {
+    calculation:
+      "Base damage during the night is affected by the number of active survivors (more survivors attract more zombies).",
+    repair: "Damaged bases can be repaired during the day phase using resources.",
   },
 }
 
@@ -173,6 +163,16 @@ export default function GameDashboard() {
   const [showRates, setShowRates] = useState(false)
   const ratesRef = useRef<HTMLDivElement>(null)
   const healthRecoveryTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Add state for night phase notification
+  const [showNightSummary, setShowNightSummary] = useState(false)
+  const [nightSummary, setNightSummary] = useState({
+    healthLost: 0,
+    resourcesLost: {
+      ammunition: 0,
+    },
+    baseDamage: 0,
+  })
 
   // Initialize game state from session storage or use default
   const [gameState, setGameState] = useState<GameState>(() => {
@@ -257,76 +257,123 @@ export default function GameDashboard() {
     }
   }, [gameState])
 
-  // Add a new function to handle night phase effects
-  // Add this function after the handleGoToNight function and before the return statement
-
-  const handleNightPhaseEffects = () => {
-    setGameState((prev) => {
-      // Create a copy of the current state to modify
-      const newState = { ...prev }
-
-      // 1. Deplete survivor health
-      const updatedSurvivors = prev.survivors.map((survivor) => {
-        // Reduce health by 10-20% for all active survivors
-        const healthReduction = Math.floor(survivor.maxHealth * (0.1 + Math.random() * 0.1))
-        return {
-          ...survivor,
-          health: Math.max(1, survivor.health - healthReduction), // Don't let health go below 1
-        }
-      })
-
-      newState.survivors = updatedSurvivors
-
-      // 2. Deplete resources based on whether player has a base
-      if (prev.hasBase) {
-        // If player has a base, zombies attack the base and deplete base health
-        // The amount depends on the base level and number of survivors
-        const baseHealthReduction = 10 + baseLevel * 5 - prev.survivors.filter((s) => s.isActive).length * 3
-        const newBaseHealth = Math.max(0, prev.baseHealth - Math.max(5, baseHealthReduction))
-
-        newState.baseHealth = newBaseHealth
-      } else {
-        // If no base, only ammunition is depleted from inventory
-        // Each survivor uses 2-5 ammunition per night
-        const activeCount = prev.survivors.filter((s) => s.isActive).length
-        const ammoUsed = activeCount * (2 + Math.floor(Math.random() * 4))
-
-        newState.resources = {
-          ...prev.resources,
-          ammunition: Math.max(0, prev.resources.ammunition - ammoUsed),
-        }
-      }
-
-      return newState
-    })
-  }
-
-  // Update the existing game timer effect to include night phase effects
-  // Replace the existing game timer useEffect with this updated version
-
+  // Game timer
   useEffect(() => {
     const timer = setInterval(() => {
       setGameState((prev) => {
-        // Check if we're transitioning from night to day
-        const isNightToDayTransition = !prev.isDay && prev.timeRemaining <= 1
+        // Check if we're transitioning from night to day (when timer hits 0 and it's night)
+        const isNightToDayTransition = prev.timeRemaining <= 0 && !prev.isDay
 
-        // If we're transitioning from night to day, trigger night phase effects
+        // Handle night-to-day transition (resource depletion and health loss)
         if (isNightToDayTransition) {
-          // We'll call handleNightPhaseEffects in the next tick to ensure state is updated properly
-          setTimeout(() => handleNightPhaseEffects(), 0)
-        }
+          // Calculate resource depletion
+          const newResources = { ...prev.resources }
+          let newBaseHealth = prev.baseHealth
+          let newSurvivors = [...prev.survivors]
 
-        return {
-          ...prev,
-          timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : 300,
-          isDay: prev.timeRemaining > 0 ? prev.isDay : !prev.isDay,
-          dayCount: prev.timeRemaining > 0 ? prev.dayCount : prev.dayCount + (prev.isDay ? 1 : 0),
+          // Deplete resources based on whether player has a base or not
+          if (prev.hasBase) {
+            // With a base: zombies attack the base and deplete resources from base requirements
+            // Calculate base resource requirements
+            const currentBase = baseLevels[baseLevel - 1]
+            const activeCount = prev.survivors.filter((s) => s.isActive).length
+
+            // Deplete base health based on active survivors and base level
+            // More survivors = more zombies attracted = more damage to base
+            const baseDamage = 10 + activeCount * 5 + Math.floor(Math.random() * 10)
+            newBaseHealth = Math.max(0, prev.baseHealth - baseDamage)
+          } else {
+            // Without a base: only ammunition is depleted from inventory
+            // Each active survivor uses some ammunition
+            const activeCount = prev.survivors.filter((s) => s.isActive).length
+            const ammoUsed = 5 * activeCount + Math.floor(Math.random() * 5)
+            newResources.ammunition = Math.max(0, prev.resources.ammunition - ammoUsed)
+          }
+
+          // Deplete health from all active survivors
+          newSurvivors = prev.survivors.map((survivor) => {
+            if (survivor.isActive) {
+              // Calculate health loss based on survivor's defense and whether they have ammunition
+              const hasAmmo = prev.resources.ammunition > 0
+              const healthLoss = hasAmmo
+                ? 5 + Math.floor(Math.random() * 10) - Math.floor(survivor.defense / 4)
+                : 15 + Math.floor(Math.random() * 15) - Math.floor(survivor.defense / 3)
+
+              // Ensure health loss is at least 1 and doesn't exceed current health
+              const actualHealthLoss = Math.max(1, Math.min(survivor.health - 1, healthLoss))
+
+              return {
+                ...survivor,
+                health: survivor.health - actualHealthLoss,
+              }
+            }
+            return survivor
+          })
+
+          // Calculate summary for night phase
+          const activeCount = prev.survivors.filter((s) => s.isActive).length
+          let totalHealthLost = 0
+          let ammoUsed = 0
+          let baseDamage = 0
+
+          if (prev.hasBase) {
+            // Calculate base damage
+            baseDamage = 10 + activeCount * 5 + Math.floor(Math.random() * 10)
+          } else {
+            // Calculate ammo used
+            ammoUsed = 5 * activeCount + Math.floor(Math.random() * 5)
+          }
+
+          // Calculate total health lost
+          prev.survivors.forEach((survivor, index) => {
+            if (survivor.isActive) {
+              const hasAmmo = prev.resources.ammunition > 0
+              const healthLoss = hasAmmo
+                ? 5 + Math.floor(Math.random() * 10) - Math.floor(survivor.defense / 4)
+                : 15 + Math.floor(Math.random() * 15) - Math.floor(survivor.defense / 3)
+
+              const actualHealthLoss = Math.max(1, Math.min(survivor.health - 1, healthLoss))
+              totalHealthLost += actualHealthLoss
+            }
+          })
+
+          // Set night summary
+          setNightSummary({
+            healthLost: totalHealthLost,
+            resourcesLost: {
+              ammunition: ammoUsed,
+            },
+            baseDamage: baseDamage,
+          })
+
+          // Show night summary dialog
+          setTimeout(() => {
+            setShowNightSummary(true)
+          }, 500)
+
+          return {
+            ...prev,
+            timeRemaining: 300, // Reset timer for day phase
+            isDay: true, // Switch to day
+            dayCount: prev.dayCount + 1, // Increment day count
+            resources: newResources,
+            baseHealth: newBaseHealth,
+            survivors: newSurvivors,
+          }
+        } else {
+          // Normal timer tick
+          return {
+            ...prev,
+            timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : 300,
+            isDay: prev.timeRemaining > 0 ? prev.isDay : !prev.isDay,
+            dayCount: prev.timeRemaining > 0 ? prev.dayCount : prev.dayCount + (prev.isDay ? 1 : 0),
+          }
         }
       })
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [])
+  }, [baseLevel])
 
   // Health recovery timer for resting survivors
   useEffect(() => {
@@ -647,9 +694,9 @@ export default function GameDashboard() {
 
     // Check if this is the first survivor (should be active) or additional survivors (should be resting)
     const isFirstSurvivor = gameState.survivors.length === 0
-    const activeCount = gameState.survivors.filter((s) => s.isActive).length
-    const maxActive = gameState.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1 // If no base, only 1 active survivor
-    const shouldBeActive = isFirstSurvivor || activeCount < maxActive
+    const activeSurvivors = gameState.survivors.filter((s) => s.isActive).length
+    const maxActiveSurvivors = gameState.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1 // If no base, only 1 active survivor
+    const shouldBeActive = isFirstSurvivor || activeSurvivors < maxActiveSurvivors
 
     // Randomly select a specialty and name
     const specialty = specialties[Math.floor(Math.random() * specialties.length)]
@@ -862,9 +909,9 @@ export default function GameDashboard() {
       } else {
         // Check if activating would exceed the max active survivors limit
         const currentActiveCount = prev.survivors.filter((s) => s.isActive).length
-        const maxActive = prev.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1 // If no base, only 1 active survivor
+        const maxActiveSurvivors = prev.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1 // If no base, only 1 active survivor
 
-        if (currentActiveCount >= maxActive) {
+        if (currentActiveCount >= maxActiveSurvivors) {
           // Cannot activate more survivors
           return prev
         }
@@ -902,9 +949,9 @@ export default function GameDashboard() {
 
     // Check if this is the first survivor (should be active) or additional survivors (should be resting)
     const isFirstSurvivor = gameState.survivors.length === 0
-    const activeCount = gameState.survivors.filter((s) => s.isActive).length
-    const maxActive = gameState.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1 // If no base, only 1 active survivor
-    const shouldBeActive = isFirstSurvivor || activeCount < maxActive
+    const activeSurvivors = gameState.survivors.filter((s) => s.isActive).length
+    const maxActiveSurvivors = gameState.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1 // If no base, only 1 active survivor
+    const shouldBeActive = isFirstSurvivor || activeSurvivors < maxActiveSurvivors
 
     // Generate a new survivor based on the purchased data
     const newSurvivor = {
@@ -1235,6 +1282,81 @@ export default function GameDashboard() {
           </div>
         )}
       </div>
+      {/* Night Summary Dialog */}
+      <Dialog open={showNightSummary} onOpenChange={setShowNightSummary}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-blue-400 text-lg">
+              <Moon className="w-5 h-5" />
+              Night Survival Report
+            </DialogTitle>
+            <DialogDescription className="text-slate-300 text-sm">
+              Your survivors made it through the night!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-3">
+            {gameState.hasBase ? (
+              <div className="bg-slate-700 p-3 rounded-lg">
+                <p className="text-sm text-white mb-2">Base Status:</p>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-slate-300">Base Damage:</span>
+                  <span className="text-xs font-medium text-red-400">-{nightSummary.baseDamage} HP</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Current Health</span>
+                    <span className="text-white">
+                      {gameState.baseHealth}/{totalMaxHealth}
+                    </span>
+                  </div>
+                  <Progress
+                    value={(gameState.baseHealth / totalMaxHealth) * 100}
+                    className={`h-1 ${
+                      gameState.baseHealth / totalMaxHealth > 0.7
+                        ? "bg-green-500"
+                        : gameState.baseHealth / totalMaxHealth > 0.3
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                    }`}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-700 p-3 rounded-lg">
+                <p className="text-sm text-white mb-2">Resources Used:</p>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-yellow-400">Ammunition:</span>
+                  <span className="text-xs font-medium text-red-400">-{nightSummary.resourcesLost.ammunition}</span>
+                </div>
+                <div className="text-xs text-slate-400 mt-2">
+                  Your survivors used ammunition to defend themselves through the night.
+                </div>
+              </div>
+            )}
+
+            <div className="bg-slate-700 p-3 rounded-lg">
+              <p className="text-sm text-white mb-2">Survivor Status:</p>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-slate-300">Total Health Lost:</span>
+                <span className="text-xs font-medium text-red-400">-{nightSummary.healthLost} HP</span>
+              </div>
+              <div className="text-xs text-slate-400 mt-2">
+                {gameState.resources.ammunition > 0
+                  ? "Your survivors fought off zombies with their weapons."
+                  : "Your survivors had to fight in melee, taking more damage!"}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <Button
+              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm"
+              onClick={() => setShowNightSummary(false)}
+            >
+              Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
