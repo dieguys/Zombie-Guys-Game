@@ -270,20 +270,14 @@ export default function GameDashboard() {
   useEffect(() => {
     const timer = setInterval(() => {
       setGameState((prev) => {
-        // Check if we're transitioning from day to night (when timer hits 0 and it's day)
-        const isDayToNightTransition = prev.timeRemaining <= 0 && prev.isDay
+        // Calculate the appropriate duration based on whether it's day or night
+        const timeLimit = prev.isDay ? 300 : calculateNightDuration(prev.dayCount)
 
         // Check if we're transitioning from night to day (when timer hits 0 and it's night)
         const isNightToDayTransition = prev.timeRemaining <= 0 && !prev.isDay
 
-        if (isDayToNightTransition) {
-          // Transition from day to night
-          return {
-            ...prev,
-            timeRemaining: calculateNightDuration(prev.dayCount), // Set night duration based on day count
-            isDay: false, // Switch to night
-          }
-        } else if (isNightToDayTransition) {
+        // Handle night-to-day transition (resource depletion and health loss)
+        if (isNightToDayTransition) {
           // Calculate resource depletion
           const newResources = { ...prev.resources }
           let newBaseHealth = prev.baseHealth
@@ -382,7 +376,9 @@ export default function GameDashboard() {
           // Normal timer tick
           return {
             ...prev,
-            timeRemaining: prev.timeRemaining - 1,
+            timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : timeLimit,
+            isDay: prev.timeRemaining > 0 ? prev.isDay : !prev.isDay,
+            dayCount: prev.timeRemaining > 0 ? prev.dayCount : prev.dayCount + (prev.isDay ? 1 : 0),
           }
         }
       })
@@ -1103,13 +1099,11 @@ export default function GameDashboard() {
           <div className="flex items-center gap-2">
             {gameState.isDay ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-blue-400" />}
             <span className="text-sm font-medium">
-              Day {gameState.dayCount} - {gameState.isDay ? "Building Phase" : "Survival Phase"}
+              Day {gameState.dayCount} {gameState.isDay ? "- Building Phase" : "- Night Phase"}
             </span>
           </div>
           <Badge variant={gameState.isDay ? "default" : "destructive"}>
-            {gameState.isDay
-              ? "Time until night: "
-              : `Night duration: ${formatTime(calculateNightDuration(gameState.dayCount))} - Time left: `}
+            {gameState.isDay ? "Time until night: " : "Time until day: "}
             {formatTime(gameState.timeRemaining)}
           </Badge>
         </div>
