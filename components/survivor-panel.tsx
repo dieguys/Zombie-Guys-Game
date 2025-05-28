@@ -23,7 +23,7 @@ import type { Resources } from "../types/game"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 interface SurvivorPanelProps {
-  survivors: Survivor[]
+  survivors: Array<Survivor & { isStarter?: boolean }>
   gachaBoxCount: number
   zmbBalance: number
   resources: Resources
@@ -747,6 +747,7 @@ export function SurvivorPanel({
                     defense: 10,
                     specialty: "scavenger" as const,
                     isActive: true,
+                    isStarter: true, // Mark as starter survivor
                   }
 
                   // Use onBuyFromSecondary with price 0 to add the free survivor
@@ -844,23 +845,35 @@ export function SurvivorPanel({
                       size="sm"
                       variant="outline"
                       className={`text-xs ${
-                        canUseGacha()
+                        canUseGacha() && !survivor.isStarter
                           ? "bg-red-600 hover:bg-red-700 text-white border-red-700"
                           : "bg-slate-600 opacity-50 cursor-not-allowed text-white border-slate-700"
                       }`}
                       onClick={() => handleKillClick(survivor)}
-                      disabled={!canUseGacha()}
-                      title={!canUseGacha() ? `Cooldown: ${gachaCooldownRemaining}` : "Convert to Gacha Token"}
+                      disabled={!canUseGacha() || survivor.isStarter}
+                      title={
+                        survivor.isStarter
+                          ? "Cannot sacrifice starter survivor"
+                          : !canUseGacha()
+                            ? `Cooldown: ${gachaCooldownRemaining}`
+                            : "Convert to Gacha Token"
+                      }
                     >
-                      {canUseGacha() ? "Gacha" : gachaCooldownRemaining}
+                      {survivor.isStarter ? "Locked" : canUseGacha() ? "Gacha" : gachaCooldownRemaining}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs bg-green-600 hover:bg-green-700 text-white border-green-700"
+                      className={`text-xs ${
+                        !survivor.isStarter
+                          ? "bg-green-600 hover:bg-green-700 text-white border-green-700"
+                          : "bg-slate-600 opacity-50 cursor-not-allowed text-white border-slate-700"
+                      }`}
                       onClick={() => handleSellClick(survivor)}
+                      disabled={survivor.isStarter}
+                      title={survivor.isStarter ? "Cannot sell starter survivor" : "Sell survivor"}
                     >
-                      Sell
+                      {survivor.isStarter ? "Locked" : "Sell"}
                     </Button>
                   </div>
                 </CardContent>
