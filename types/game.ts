@@ -8,6 +8,7 @@ export interface Survivor {
   defense: number
   specialty: "builder" | "fighter" | "scavenger" | "medic"
   isActive: boolean
+  isStarter?: boolean
 }
 
 export interface BaseStructure {

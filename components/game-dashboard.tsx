@@ -823,7 +823,8 @@ export default function GameDashboard() {
       attack: survivorData.attack || 15,
       defense: survivorData.defense || 10,
       specialty: survivorData.specialty || "fighter",
-      isActive: shouldBeActive, // Only active if it's the first survivor or we're under the limit
+      isActive: shouldBeActive,
+      isStarter: survivorData.isStarter || false, // Preserve the isStarter property
     }
 
     // Update game state
