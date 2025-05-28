@@ -335,7 +335,10 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
 
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400">ZMB Tokens</span>
-            <span className="text-sm font-medium text-green-400">{wallet.tokenBalance.toLocaleString()}</span>
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-medium text-green-400">{wallet.tokenBalance.toLocaleString()}</span>
+              <span className="text-xs text-yellow-300">(Same as header balance)</span>
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
