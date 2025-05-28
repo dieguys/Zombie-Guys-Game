@@ -28,7 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
-// Default initial game state
+// Modify the initialGameState to include a free starter survivor
 const initialGameState: GameState = {
   isDay: true,
   dayCount: 1,
@@ -39,7 +39,21 @@ const initialGameState: GameState = {
   hasBase: false, // Start without a base
   gems: 0, // Start with 0 SOL
   coins: 0, // Start with 0 ZMB
-  survivors: [], // No active survivors initially
+  survivors: [
+    // Start with a free survivor
+    {
+      id: "starter-survivor",
+      name: "Scout",
+      level: 1,
+      health: 100,
+      maxHealth: 100,
+      attack: 12,
+      defense: 10,
+      specialty: "scavenger",
+      isActive: true,
+      isStarter: true, // Mark as starter survivor
+    },
+  ],
   structures: [], // No structures initially
   resources: {
     wood: 0,

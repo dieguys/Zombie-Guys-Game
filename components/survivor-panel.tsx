@@ -839,10 +839,15 @@ export function SurvivorPanel({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs bg-slate-600 opacity-50 cursor-not-allowed text-white border-slate-700"
-                      disabled
+                      className={`text-xs ${
+                        survivor.isStarter
+                          ? "bg-slate-600 opacity-50 cursor-not-allowed text-white border-slate-700"
+                          : "bg-slate-600 opacity-50 cursor-not-allowed text-white border-slate-700"
+                      }`}
+                      disabled={true}
+                      title={survivor.isStarter ? "Cannot breed starter survivor" : "Breeding not available yet"}
                     >
-                      Breed
+                      {survivor.isStarter ? "Locked" : "Breed"}
                     </Button>
                     <Button
                       size="sm"
