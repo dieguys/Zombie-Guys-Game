@@ -113,13 +113,13 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
     <div className="space-y-4">
       {/* Warning Dialog */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-500">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-red-500 text-lg">
               <AlertCircle className="w-5 h-5" />
               Access Denied
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               You must RAGEQUIT first before accessing this feature.
             </DialogDescription>
           </DialogHeader>
@@ -133,17 +133,17 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
 
       {/* Ragequit Confirmation Dialog */}
       <Dialog open={showRagequitConfirm} onOpenChange={setShowRagequitConfirm}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-500">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md overflow-y-auto max-h-[85vh]">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-red-500 text-lg">
               <Skull className="w-5 h-5" />
               CONFIRM RAGEQUIT
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               WARNING: You are about to liquidate your entire account!
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-4 py-4">
+          <div className="flex flex-col items-center justify-center gap-3 py-3">
             {/* Account Value Summary */}
             <div className="bg-slate-700 p-3 rounded-lg w-full mb-2">
               <p className="text-sm text-white mb-2 font-bold text-center">Account Value</p>
@@ -175,7 +175,7 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
               </div>
             </div>
 
-            <div className="bg-red-900/30 border border-red-700 p-4 rounded-lg w-full">
+            <div className="bg-red-900/30 border border-red-700 p-3 rounded-lg w-full">
               <p className="text-sm text-white mb-2 font-bold">This action will permanently delete:</p>
               <ul className="text-xs text-slate-300 space-y-1 list-disc pl-5">
                 <li>All your inventory items and resources</li>
@@ -183,15 +183,15 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
                 <li>All your structures and base progress</li>
                 <li>All your game statistics and achievements</li>
               </ul>
-              <p className="text-xs text-red-400 mt-3 font-medium">This action CANNOT be undone!</p>
+              <p className="text-xs text-red-400 mt-2 font-medium">This action CANNOT be undone!</p>
             </div>
           </div>
-          <div className="flex justify-center gap-3">
-            <Button variant="outline" onClick={() => setShowRagequitConfirm(false)} className="mt-2">
+          <div className="flex justify-center gap-2 mt-2">
+            <Button variant="outline" onClick={() => setShowRagequitConfirm(false)} className="text-sm">
               Cancel
             </Button>
             <Button
-              className="mt-2 bg-red-600 hover:bg-red-700 text-white px-6 font-bold"
+              className="bg-red-600 hover:bg-red-700 text-white px-4 text-sm font-bold"
               onClick={handleConfirmRagequit}
             >
               I UNDERSTAND, RAGEQUIT
@@ -202,20 +202,20 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
 
       {/* QR Code Dialog */}
       <Dialog open={showQrCode} onOpenChange={setShowQrCode}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-white">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-white text-lg">
               <QrCode className="w-5 h-5" />
               Top Up Your Wallet
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               Scan this QR code or send SOL to the address below
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-4 py-4">
-            {/* QR Code Placeholder */}
-            <div className="w-48 h-48 bg-white p-4 rounded-lg flex items-center justify-center">
-              <div className="w-40 h-40 border-2 border-slate-800 grid grid-cols-5 grid-rows-5">
+          <div className="flex flex-col items-center justify-center gap-3 py-3">
+            {/* QR Code Placeholder - Smaller size */}
+            <div className="w-40 h-40 sm:w-48 sm:h-48 bg-white p-3 rounded-lg flex items-center justify-center">
+              <div className="w-full h-full border-2 border-slate-800 grid grid-cols-5 grid-rows-5">
                 {/* Simplified QR code pattern */}
                 <div className="col-span-2 row-span-2 bg-slate-800 m-1 rounded-lg"></div>
                 <div className="col-span-2 row-span-2 bg-slate-800 m-1 rounded-lg col-start-4"></div>
@@ -228,16 +228,21 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
               </div>
             </div>
 
-            {/* Wallet Address */}
-            <div className="flex items-center gap-2 bg-slate-700 p-2 rounded-md w-full">
-              <span className="text-xs font-mono text-white flex-1 text-center">{wallet.address}</span>
-              <Button size="sm" variant="ghost" onClick={copyAddress} className="h-6 w-6 p-0">
+            {/* Wallet Address - More compact */}
+            <div className="flex items-center gap-1 bg-slate-700 p-2 rounded-md w-full">
+              <span className="text-xs font-mono text-white flex-1 overflow-x-auto whitespace-nowrap">
+                {wallet.address}
+              </span>
+              <Button size="sm" variant="ghost" onClick={copyAddress} className="h-6 w-6 p-0 flex-shrink-0">
                 <Copy className="w-3 h-3" />
               </Button>
             </div>
           </div>
-          <div className="flex justify-center">
-            <Button className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6" onClick={handleTopUpConfirm}>
+          <div className="flex justify-center mt-2">
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm"
+              onClick={handleTopUpConfirm}
+            >
               <CheckCircle className="w-4 h-4 mr-2" />I have topped up
             </Button>
           </div>
@@ -246,24 +251,24 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
 
       {/* Buy ZMB Dialog */}
       <Dialog open={showBuyZMB} onOpenChange={setShowBuyZMB}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-500">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-green-500 text-lg">
               <ArrowRightLeft className="w-5 h-5" />
               Convert SOL to ZMB
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               All of your SOL will be converted to ZMB
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center justify-center gap-4 py-6">
+          <div className="flex items-center justify-center gap-4 py-4">
             <div className="flex flex-col items-center">
-              <span className="text-lg font-bold text-white">{wallet.balance} SOL</span>
+              <span className="text-base sm:text-lg font-bold text-white">{wallet.balance} SOL</span>
               <span className="text-xs text-slate-400">Current Balance</span>
             </div>
-            <ArrowRightLeft className="w-6 h-6 text-green-500 mx-4" />
+            <ArrowRightLeft className="w-5 h-5 text-green-500 mx-2 sm:mx-4" />
             <div className="flex flex-col items-center">
-              <span className="text-lg font-bold text-green-400">
+              <span className="text-base sm:text-lg font-bold text-green-400">
                 {(Number(wallet.balance) * 100000).toLocaleString()} ZMB
               </span>
               <span className="text-xs text-slate-400">Estimated Tokens</span>
@@ -271,7 +276,7 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
           </div>
           <div className="flex justify-center">
             <Button
-              className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6"
+              className="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm"
               onClick={handleConfirmBuyZMB}
               disabled={Number(wallet.balance) <= 0}
             >
@@ -283,29 +288,29 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
 
       {/* Bonus Claimed Dialog */}
       <Dialog open={showBonusClaimed} onOpenChange={setShowBonusClaimed}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-500">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-green-500 text-lg">
               <CheckCircle className="w-5 h-5" />
               Daily Bonus Claimed!
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               You've received your daily bonus rewards!
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-2 py-4">
+          <div className="flex flex-col items-center justify-center gap-2 py-3">
             <div className="text-center">
               <p className="text-lg font-bold text-green-400">+50 ZMB</p>
               <p className="text-sm text-slate-400">Bonus Tokens</p>
             </div>
-            <div className="text-center mt-2">
+            <div className="text-center mt-1">
               <p className="text-sm text-slate-300">Next bonus available in:</p>
               <p className="text-lg font-bold text-white">24h 0m</p>
             </div>
           </div>
           <div className="flex justify-center">
             <Button
-              className="mt-2 bg-green-600 hover:bg-green-700 text-white px-6"
+              className="mt-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm"
               onClick={() => setShowBonusClaimed(false)}
             >
               Awesome!

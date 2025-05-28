@@ -311,21 +311,21 @@ export function SurvivorPanel({
     <div className="space-y-4">
       {/* Buy Confirmation Dialog */}
       <Dialog open={showBuyConfirm} onOpenChange={setShowBuyConfirm}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-white">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-white text-lg">
               <ShoppingCart className="w-5 h-5" />
               Confirm Purchase
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               You are about to purchase a survivor from the secondary market.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-4 py-4">
+          <div className="flex flex-col items-center justify-center gap-3 py-3">
             {soldSurvivors.length > 0 && (
               <>
                 <div className="bg-slate-700 p-3 rounded-lg w-full">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-1">
                     {(() => {
                       const SpecialtyIcon = getSpecialtyIcon(soldSurvivors[0].specialty)
                       return <SpecialtyIcon className={`w-4 h-4 ${getSpecialtyColor(soldSurvivors[0].specialty)}`} />
@@ -338,7 +338,7 @@ export function SurvivorPanel({
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-slate-300">Price:</p>
-                  <p className="text-2xl font-bold text-green-400">{soldSurvivors[0].price.toLocaleString()} ZMB</p>
+                  <p className="text-xl font-bold text-green-400">{soldSurvivors[0].price.toLocaleString()} ZMB</p>
                   <p className="text-xs text-slate-400">(${(soldSurvivors[0].price / 500).toFixed(2)} USD)</p>
                 </div>
               </>
@@ -348,7 +348,10 @@ export function SurvivorPanel({
             </div>
           </div>
           <div className="flex justify-center">
-            <Button className="mt-2 bg-green-600 hover:bg-green-700 text-white px-6" onClick={handleConfirmBuy}>
+            <Button
+              className="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm"
+              onClick={handleConfirmBuy}
+            >
               Confirm
             </Button>
           </div>
@@ -357,20 +360,20 @@ export function SurvivorPanel({
 
       {/* Kill Confirmation Dialog */}
       <Dialog open={showKillConfirm} onOpenChange={setShowKillConfirm}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-500">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-red-500 text-lg">
               <AlertCircle className="w-5 h-5" />
               Confirm Gacha
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               Are you sure you want to quick sell your Survivor to the Gacha Box?
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-4 py-4">
+          <div className="flex flex-col items-center justify-center gap-3 py-3">
             {selectedSurvivor && (
               <div className="bg-slate-700 p-3 rounded-lg w-full">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1">
                   {(() => {
                     const SpecialtyIcon = getSpecialtyIcon(selectedSurvivor.specialty)
                     return <SpecialtyIcon className={`w-4 h-4 ${getSpecialtyColor(selectedSurvivor.specialty)}`} />
@@ -389,11 +392,11 @@ export function SurvivorPanel({
               </div>
             )}
           </div>
-          <div className="flex justify-center gap-3">
-            <Button variant="outline" onClick={() => setShowKillConfirm(false)} className="mt-2">
+          <div className="flex justify-center gap-2">
+            <Button variant="outline" onClick={() => setShowKillConfirm(false)} className="text-sm">
               Cancel
             </Button>
-            <Button className="mt-2 bg-red-600 hover:bg-red-700 text-white px-6" onClick={handleConfirmKill}>
+            <Button className="bg-red-600 hover:bg-red-700 text-white px-4 text-sm" onClick={handleConfirmKill}>
               Quick Sell
             </Button>
           </div>
@@ -402,20 +405,20 @@ export function SurvivorPanel({
 
       {/* Sell Confirmation Dialog */}
       <Dialog open={showSellConfirm} onOpenChange={setShowSellConfirm}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-500">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-green-500 text-lg">
               <ShoppingCart className="w-5 h-5" />
               Sell Survivor
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               Set your price or sell to the highest bidder
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-4 py-4">
+          <div className="flex flex-col items-center justify-center gap-3 py-3">
             {selectedSurvivor && (
               <div className="bg-slate-700 p-3 rounded-lg w-full">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1">
                   {(() => {
                     const SpecialtyIcon = getSpecialtyIcon(selectedSurvivor.specialty)
                     return <SpecialtyIcon className={`w-4 h-4 ${getSpecialtyColor(selectedSurvivor.specialty)}`} />
@@ -428,14 +431,14 @@ export function SurvivorPanel({
 
                 {/* Floor Price Section */}
                 <div className="mt-2 text-center">
-                  <p className="text-sm text-slate-300">Current Floor Price:</p>
-                  <p className="text-xl font-bold text-green-400">
+                  <p className="text-xs text-slate-300">Current Floor Price:</p>
+                  <p className="text-base font-bold text-green-400">
                     {Math.round(zmbBalance * 0.03 * (1 + selectedSurvivor.level * 0.2)).toLocaleString()} ZMB
                   </p>
                 </div>
 
                 {/* Price Selection */}
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-300">Set Your Price:</span>
                     <div className="flex items-center gap-2">
@@ -465,18 +468,18 @@ export function SurvivorPanel({
               </div>
             )}
           </div>
-          <div className="flex justify-center gap-3">
-            <Button variant="outline" onClick={() => setShowSellConfirm(false)} className="mt-2">
+          <div className="flex justify-center gap-2">
+            <Button variant="outline" onClick={() => setShowSellConfirm(false)} className="text-sm">
               Cancel
             </Button>
             <Button
-              className="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-6"
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 text-sm"
               onClick={() => handleConfirmSell()}
             >
               Quick Sell
             </Button>
             <Button
-              className="mt-2 bg-green-600 hover:bg-green-700 text-white px-6"
+              className="bg-green-600 hover:bg-green-700 text-white px-3 text-sm"
               onClick={() => handleConfirmSell(customPrice)}
             >
               List for Sale
@@ -487,22 +490,22 @@ export function SurvivorPanel({
 
       {/* Rest Confirmation Dialog */}
       <Dialog open={showRestConfirm} onOpenChange={setShowRestConfirm}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-blue-500">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-blue-500 text-lg">
               <BedDouble className="w-5 h-5" />
               {selectedSurvivor?.isActive ? "Confirm Rest" : "Confirm Activate"}
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               {selectedSurvivor?.isActive
                 ? "Your survivor will rest to recover health."
                 : "Your survivor will return to active duty."}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-4 py-4">
+          <div className="flex flex-col items-center justify-center gap-3 py-3">
             {selectedSurvivor && (
               <div className="bg-slate-700 p-3 rounded-lg w-full">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1">
                   {(() => {
                     const SpecialtyIcon = getSpecialtyIcon(selectedSurvivor.specialty)
                     return <SpecialtyIcon className={`w-4 h-4 ${getSpecialtyColor(selectedSurvivor.specialty)}`} />
@@ -514,7 +517,7 @@ export function SurvivorPanel({
                 </div>
 
                 {selectedSurvivor.isActive && (
-                  <div className="bg-slate-600/50 p-2 rounded-lg mb-3 text-xs">
+                  <div className="bg-slate-600/50 p-2 rounded-lg mb-2 text-xs">
                     <p className={hasBase ? "text-blue-300" : "text-yellow-300"}>
                       {hasBase
                         ? "Note: Resources will be depleted from your base, not inventory."
@@ -523,7 +526,7 @@ export function SurvivorPanel({
                   </div>
                 )}
 
-                <div className="space-y-1 mb-3">
+                <div className="space-y-1 mb-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400">Current Health</span>
                     <span className="text-white">
@@ -546,7 +549,7 @@ export function SurvivorPanel({
 
                 {selectedSurvivor.isActive && (
                   <div className="bg-slate-800 p-2 rounded-lg">
-                    <p className="text-xs font-medium text-white mb-2">Cost:</p>
+                    <p className="text-xs font-medium text-white mb-1">Cost:</p>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-yellow-400">ZMB</span>
                       <span className="text-xs font-medium text-white">{getRestCost(selectedSurvivor).zmb}</span>
@@ -577,12 +580,12 @@ export function SurvivorPanel({
               </div>
             )}
           </div>
-          <div className="flex justify-center gap-3">
-            <Button variant="outline" onClick={() => setShowRestConfirm(false)} className="mt-2">
+          <div className="flex justify-center gap-2">
+            <Button variant="outline" onClick={() => setShowRestConfirm(false)} className="text-sm">
               Cancel
             </Button>
             <Button
-              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-6"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 text-sm"
               onClick={handleConfirmRest}
               disabled={
                 (selectedSurvivor?.isActive && !canAffordRest(selectedSurvivor)) ||
@@ -597,17 +600,17 @@ export function SurvivorPanel({
 
       {/* Max Capacity Warning Dialog */}
       <Dialog open={showMaxCapacityWarning} onOpenChange={setShowMaxCapacityWarning}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-yellow-500">
+        <DialogContent className="bg-slate-800 border-slate-700 text-white p-4 max-w-[90vw] w-full sm:max-w-md">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-yellow-500 text-lg">
               <AlertCircle className="w-5 h-5" />
               Base Capacity Reached
             </DialogTitle>
-            <DialogDescription className="text-slate-300 pt-2">
+            <DialogDescription className="text-slate-300 text-sm">
               You've reached the maximum number of active survivors for your current base.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center gap-4 py-4">
+          <div className="flex flex-col items-center justify-center gap-3 py-3">
             <div className="bg-slate-700 p-3 rounded-lg w-full">
               <div className="text-sm text-white mb-2">
                 Your level {Math.ceil(maxActiveSurvivors / 2)} base can only support {maxActiveSurvivors} active
@@ -621,7 +624,7 @@ export function SurvivorPanel({
           </div>
           <div className="flex justify-center">
             <Button
-              className="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-6"
+              className="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 text-sm"
               onClick={() => setShowMaxCapacityWarning(false)}
             >
               Understood
