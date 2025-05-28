@@ -134,6 +134,15 @@ const baseLevels = [
   },
 ]
 
+// Night duration settings
+const calculateNightDuration = (dayCount: number) => {
+  // Start with 30 seconds for the first night
+  // Increase by 30 seconds each night
+  // Cap at 300 seconds (5 minutes)
+  const duration = Math.min(30 * dayCount, 300)
+  return duration
+}
+
 // Night time survival rules
 const nightTimeRules = {
   // Resource depletion rules
@@ -261,6 +270,9 @@ export default function GameDashboard() {
   useEffect(() => {
     const timer = setInterval(() => {
       setGameState((prev) => {
+        // Calculate the appropriate duration based on whether it's day or night
+        const timeLimit = prev.isDay ? 300 : calculateNightDuration(prev.dayCount)
+
         // Check if we're transitioning from night to day (when timer hits 0 and it's night)
         const isNightToDayTransition = prev.timeRemaining <= 0 && !prev.isDay
 
@@ -364,7 +376,7 @@ export default function GameDashboard() {
           // Normal timer tick
           return {
             ...prev,
-            timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : 300,
+            timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : timeLimit,
             isDay: prev.timeRemaining > 0 ? prev.isDay : !prev.isDay,
             dayCount: prev.timeRemaining > 0 ? prev.dayCount : prev.dayCount + (prev.isDay ? 1 : 0),
           }
