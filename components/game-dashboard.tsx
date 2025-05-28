@@ -836,11 +836,11 @@ export default function GameDashboard() {
 
   // New function to handle going to night
   const handleGoToNight = () => {
-    // Only set timeRemaining to 0 if it's currently day
+    // Only set timeRemaining to 5 if it's currently day
     if (gameState.isDay) {
       setGameState((prev) => ({
         ...prev,
-        timeRemaining: 0,
+        timeRemaining: 5,
       }))
     }
   }
