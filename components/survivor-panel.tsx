@@ -706,8 +706,56 @@ export function SurvivorPanel({
         {survivors.length === 0 ? (
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="p-4 text-center">
-              <div className="text-slate-400 text-sm">No Survivorz Yet</div>
-              <div className="text-xs text-slate-500 mt-1">Buy from the Gacha Box to get started</div>
+              <div className="text-green-400 text-sm font-medium">Get Your Free Starter Survivor!</div>
+              <div className="text-xs text-slate-300 mt-1 mb-3">
+                Start playing without needing to top up your wallet
+              </div>
+
+              <div className="bg-slate-700/50 p-3 rounded-lg mb-3">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Search className="w-5 h-5 text-green-400" />
+                  <span className="text-sm font-medium text-white">Basic Scavenger</span>
+                  <Badge variant="secondary" className="text-xs">
+                    Lv.1
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Attack</span>
+                    <span className="text-white font-medium">12</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Defense</span>
+                    <span className="text-white font-medium">10</span>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-400">
+                  A basic survivor with scavenging abilities to help you gather resources.
+                </div>
+              </div>
+
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  // Create a basic scavenger survivor
+                  const newSurvivor = {
+                    id: `survivor-${Date.now()}`,
+                    name: "Scout",
+                    level: 1,
+                    health: 100,
+                    maxHealth: 100,
+                    attack: 12,
+                    defense: 10,
+                    specialty: "scavenger" as const,
+                    isActive: true,
+                  }
+
+                  // Call onBuySurvivor but without deducting any cost
+                  onBuySurvivor()
+                }}
+              >
+                Claim Free Survivor
+              </Button>
             </CardContent>
           </Card>
         ) : (
