@@ -1307,6 +1307,7 @@ export default function GameDashboard() {
           <div className="p-4">
             <WalletIntegration
               wallet={gameState.wallet}
+              zmbBalance={gameState.coins}
               onTopUp={handleTopUp}
               onBuyZMB={handleBuyZMB}
               onClaimBonus={handleClaimBonus}

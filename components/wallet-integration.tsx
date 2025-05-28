@@ -22,13 +22,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 
 interface WalletIntegrationProps {
   wallet: WalletData
+  zmbBalance: number
   onTopUp: () => void
   onBuyZMB: (solAmount: number) => void
   onClaimBonus: () => void
   onGoToNight: () => void
 }
 
-export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onGoToNight }: WalletIntegrationProps) {
+export function WalletIntegration({
+  wallet,
+  zmbBalance,
+  onTopUp,
+  onBuyZMB,
+  onClaimBonus,
+  onGoToNight,
+}: WalletIntegrationProps) {
   const [showWarning, setShowWarning] = useState(false)
   const [showQrCode, setShowQrCode] = useState(false)
   const [showBuyZMB, setShowBuyZMB] = useState(false)
@@ -82,7 +90,7 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
 
   const calculateTotalAccountValue = () => {
     // Convert ZMB to SOL (assuming 100,000 ZMB per SOL from gameRates)
-    const zmbValueInSol = wallet.tokenBalance / 100000
+    const zmbValueInSol = zmbBalance / 100000
 
     // Placeholder for inventory value - in a real implementation,
     // this would calculate the value of all resources based on their rates
@@ -335,10 +343,7 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onG
 
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400">ZMB Tokens</span>
-            <div className="flex flex-col items-end">
-              <span className="text-sm font-medium text-green-400">{wallet.tokenBalance.toLocaleString()}</span>
-              <span className="text-xs text-yellow-300">(Same as header balance)</span>
-            </div>
+            <span className="text-sm font-medium text-green-400">{zmbBalance.toLocaleString()}</span>
           </div>
 
           <div className="flex items-center justify-between">
