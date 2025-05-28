@@ -133,6 +133,42 @@ const baseLevels = [
   },
 ]
 
+// Night phase rules
+const nightPhaseRules = {
+  // Health depletion
+  survivorHealthDepletion: {
+    minPercent: 10, // Minimum percent of health depleted per night
+    maxPercent: 20, // Maximum percent of health depleted per night
+  },
+
+  // Resource depletion
+  resourceDepletion: {
+    // Without a base
+    noBase: {
+      ammunitionPerSurvivor: {
+        min: 2, // Minimum ammunition used per survivor
+        max: 5, // Maximum ammunition used per survivor
+      },
+    },
+
+    // With a base
+    withBase: {
+      baseHealthReduction: {
+        base: 10, // Base amount of health reduction
+        perLevel: 5, // Additional reduction per base level
+        survivorDefenseValue: 3, // Each active survivor reduces damage by this amount
+      },
+    },
+  },
+
+  // Combat rules (for future implementation)
+  combat: {
+    // If ammunition runs out, survivors can't shoot zombies
+    // Each survivor needs ammunition to defend during the night
+    // Combat sequence will be implemented in future updates
+  },
+}
+
 export default function GameDashboard() {
   const [showRates, setShowRates] = useState(false)
   const ratesRef = useRef<HTMLDivElement>(null)
@@ -221,15 +257,72 @@ export default function GameDashboard() {
     }
   }, [gameState])
 
-  // Game timer
+  // Add a new function to handle night phase effects
+  // Add this function after the handleGoToNight function and before the return statement
+
+  const handleNightPhaseEffects = () => {
+    setGameState((prev) => {
+      // Create a copy of the current state to modify
+      const newState = { ...prev }
+
+      // 1. Deplete survivor health
+      const updatedSurvivors = prev.survivors.map((survivor) => {
+        // Reduce health by 10-20% for all active survivors
+        const healthReduction = Math.floor(survivor.maxHealth * (0.1 + Math.random() * 0.1))
+        return {
+          ...survivor,
+          health: Math.max(1, survivor.health - healthReduction), // Don't let health go below 1
+        }
+      })
+
+      newState.survivors = updatedSurvivors
+
+      // 2. Deplete resources based on whether player has a base
+      if (prev.hasBase) {
+        // If player has a base, zombies attack the base and deplete base health
+        // The amount depends on the base level and number of survivors
+        const baseHealthReduction = 10 + baseLevel * 5 - prev.survivors.filter((s) => s.isActive).length * 3
+        const newBaseHealth = Math.max(0, prev.baseHealth - Math.max(5, baseHealthReduction))
+
+        newState.baseHealth = newBaseHealth
+      } else {
+        // If no base, only ammunition is depleted from inventory
+        // Each survivor uses 2-5 ammunition per night
+        const activeCount = prev.survivors.filter((s) => s.isActive).length
+        const ammoUsed = activeCount * (2 + Math.floor(Math.random() * 4))
+
+        newState.resources = {
+          ...prev.resources,
+          ammunition: Math.max(0, prev.resources.ammunition - ammoUsed),
+        }
+      }
+
+      return newState
+    })
+  }
+
+  // Update the existing game timer effect to include night phase effects
+  // Replace the existing game timer useEffect with this updated version
+
   useEffect(() => {
     const timer = setInterval(() => {
-      setGameState((prev) => ({
-        ...prev,
-        timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : 300,
-        isDay: prev.isDay ? prev.isDay : !prev.isDay,
-        dayCount: prev.timeRemaining > 0 ? prev.dayCount : prev.dayCount + (prev.isDay ? 1 : 0),
-      }))
+      setGameState((prev) => {
+        // Check if we're transitioning from night to day
+        const isNightToDayTransition = !prev.isDay && prev.timeRemaining <= 1
+
+        // If we're transitioning from night to day, trigger night phase effects
+        if (isNightToDayTransition) {
+          // We'll call handleNightPhaseEffects in the next tick to ensure state is updated properly
+          setTimeout(() => handleNightPhaseEffects(), 0)
+        }
+
+        return {
+          ...prev,
+          timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : 300,
+          isDay: prev.timeRemaining > 0 ? prev.isDay : !prev.isDay,
+          dayCount: prev.timeRemaining > 0 ? prev.dayCount : prev.dayCount + (prev.isDay ? 1 : 0),
+        }
+      })
     }, 1000)
 
     return () => clearInterval(timer)
