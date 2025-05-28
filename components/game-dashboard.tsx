@@ -270,14 +270,20 @@ export default function GameDashboard() {
   useEffect(() => {
     const timer = setInterval(() => {
       setGameState((prev) => {
-        // Calculate the appropriate duration based on whether it's day or night
-        const timeLimit = prev.isDay ? 300 : calculateNightDuration(prev.dayCount)
+        // Check if we're transitioning from day to night (when timer hits 0 and it's day)
+        const isDayToNightTransition = prev.timeRemaining <= 0 && prev.isDay
 
         // Check if we're transitioning from night to day (when timer hits 0 and it's night)
         const isNightToDayTransition = prev.timeRemaining <= 0 && !prev.isDay
 
-        // Handle night-to-day transition (resource depletion and health loss)
-        if (isNightToDayTransition) {
+        if (isDayToNightTransition) {
+          // Transition from day to night
+          return {
+            ...prev,
+            timeRemaining: calculateNightDuration(prev.dayCount), // Set night duration based on day count
+            isDay: false, // Switch to night
+          }
+        } else if (isNightToDayTransition) {
           // Calculate resource depletion
           const newResources = { ...prev.resources }
           let newBaseHealth = prev.baseHealth
@@ -376,9 +382,7 @@ export default function GameDashboard() {
           // Normal timer tick
           return {
             ...prev,
-            timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : timeLimit,
-            isDay: prev.timeRemaining > 0 ? prev.isDay : !prev.isDay,
-            dayCount: prev.timeRemaining > 0 ? prev.dayCount : prev.dayCount + (prev.isDay ? 1 : 0),
+            timeRemaining: prev.timeRemaining - 1,
           }
         }
       })
@@ -1103,7 +1107,9 @@ export default function GameDashboard() {
             </span>
           </div>
           <Badge variant={gameState.isDay ? "default" : "destructive"}>
-            {gameState.isDay ? "Time until night: " : "Time until day: "}
+            {gameState.isDay
+              ? "Time until night: "
+              : `Night duration: ${formatTime(calculateNightDuration(gameState.dayCount))} - Time left: `}
             {formatTime(gameState.timeRemaining)}
           </Badge>
         </div>
