@@ -217,7 +217,7 @@ export default function GameDashboard() {
   const [showCharacterPreview, setShowCharacterPreview] = useState(false)
 
   // Add a function to generate all 10 characters for preview with fixed stats
-  const generateCharacterPreview = () => {
+  const [characterPreview, setCharacterPreview] = useState(() => {
     const names = ["Alex", "Maya", "Zoe", "Sam", "Riley", "Jordan", "Taylor", "Casey", "Morgan", "Quinn"]
     const specialties = ["fighter", "builder", "scavenger", "medic"] as const
 
@@ -257,7 +257,7 @@ export default function GameDashboard() {
         isActive: true,
       }
     })
-  }
+  })
 
   // Save game state to session storage whenever it changes
   useEffect(() => {
@@ -374,9 +374,10 @@ export default function GameDashboard() {
           }
         } else if (prev.timeRemaining <= 0) {
           // Transition from day to night
+          const nightDuration = calculateNightDuration(prev.dayCount)
           return {
             ...prev,
-            timeRemaining: timeLimit, // Set timer based on calculated night duration
+            timeRemaining: nightDuration, // Set timer based on calculated night duration for current day
             isDay: false, // Switch to night
             // Don't increment day count here - day count only changes after night phase
           }
@@ -1211,7 +1212,7 @@ export default function GameDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
-                  {generateCharacterPreview().map((character) => (
+                  {characterPreview.map((character) => (
                     <Card key={character.id} className="bg-slate-800 border-slate-700">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
