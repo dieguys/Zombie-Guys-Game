@@ -25,9 +25,10 @@ interface WalletIntegrationProps {
   onTopUp: () => void
   onBuyZMB: (solAmount: number) => void
   onClaimBonus: () => void
+  onGoToNight: () => void
 }
 
-export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus }: WalletIntegrationProps) {
+export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus, onGoToNight }: WalletIntegrationProps) {
   const [showWarning, setShowWarning] = useState(false)
   const [showQrCode, setShowQrCode] = useState(false)
   const [showBuyZMB, setShowBuyZMB] = useState(false)
@@ -410,19 +411,22 @@ export function WalletIntegration({ wallet, onTopUp, onBuyZMB, onClaimBonus }: W
         <CardContent className="space-y-2">
           <Button
             size="sm"
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold"
+            onClick={onGoToNight}
+          >
+            GO TO NIGHT
+          </Button>
+
+          <Button
+            size="sm"
             className="w-full bg-red-600 hover:bg-red-700 text-white font-bold"
             onClick={handleRagequitClick}
           >
             RAGEQUIT
           </Button>
 
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full"
-            onClick={() => window.open(`https://explorer.solana.com/address/${wallet.address}`, "_blank")}
-          >
-            View on Solana Explorer
+          <Button size="sm" variant="outline" className="w-full" onClick={handleExportClick}>
+            Export Private Key (RAGEQUIT first)
           </Button>
 
           <Button size="sm" variant="outline" className="w-full">

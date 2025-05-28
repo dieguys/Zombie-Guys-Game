@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -27,11 +27,15 @@ interface SurvivorPanelProps {
   gachaBoxCount: number
   zmbBalance: number
   resources: Resources
+  maxActiveSurvivors: number
   onBuySurvivor: () => void
   onSellSurvivor: (survivorId: string) => void
   onKillSurvivor: (survivorId: string) => void
   onRestSurvivor: (survivorId: string, cost: { zmb: number; resources: Partial<Resources> }) => void
   onBuyFromSecondary: (survivor: Partial<Survivor>, price: number) => void
+  hasBase?: boolean
+  calculateRestCost?: (survivor: Survivor) => { zmb: number; resources: Partial<Resources> }
+  onShowCharacterPreview: () => void
 }
 
 export function SurvivorPanel({
@@ -39,11 +43,15 @@ export function SurvivorPanel({
   gachaBoxCount,
   zmbBalance,
   resources,
+  maxActiveSurvivors,
   onBuySurvivor,
   onSellSurvivor,
   onKillSurvivor,
   onRestSurvivor,
   onBuyFromSecondary,
+  hasBase,
+  calculateRestCost,
+  onShowCharacterPreview,
 }: SurvivorPanelProps) {
   const [showGachaAnimation, setShowGachaAnimation] = useState(false)
   const [showBuyConfirm, setShowBuyConfirm] = useState(false)
@@ -61,6 +69,40 @@ export function SurvivorPanel({
     }>
   >([])
   const [customPrice, setCustomPrice] = useState<number>(0)
+  const [showMaxCapacityWarning, setShowMaxCapacityWarning] = useState(false)
+  const [lastGachaTime, setLastGachaTime] = useState<number>(() => {
+    // Load last gacha time from localStorage
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("lastGachaTime")
+      return saved ? Number.parseInt(saved) : 0
+    }
+    return 0
+  })
+  const [gachaCooldownRemaining, setGachaCooldownRemaining] = useState<string>("")
+  const [gachaTokens, setGachaTokens] = useState<number>(0)
+
+  // Update gacha cooldown timer
+  useEffect(() => {
+    const updateCooldown = () => {
+      const now = Date.now()
+      const timeSinceLastGacha = now - lastGachaTime
+      const cooldownPeriod = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+
+      if (timeSinceLastGacha < cooldownPeriod) {
+        const remaining = cooldownPeriod - timeSinceLastGacha
+        const hours = Math.floor(remaining / (60 * 60 * 1000))
+        const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000))
+        setGachaCooldownRemaining(`${hours}h ${minutes}m`)
+      } else {
+        setGachaCooldownRemaining("")
+      }
+    }
+
+    updateCooldown()
+    const interval = setInterval(updateCooldown, 60000) // Update every minute
+
+    return () => clearInterval(interval)
+  }, [lastGachaTime])
 
   // Calculate survivor cost as 5% of ZMB balance
   const survivorCost = Math.max(Math.round(zmbBalance * 0.05), 100) // Minimum 100 ZMB
@@ -124,8 +166,24 @@ export function SurvivorPanel({
     return true
   }
 
+  const canUseGacha = () => {
+    const now = Date.now()
+    const timeSinceLastGacha = now - lastGachaTime
+    const cooldownPeriod = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+    return timeSinceLastGacha >= cooldownPeriod
+  }
+
   const handleMint = () => {
-    if (gachaBoxCount > 0 && zmbBalance >= survivorCost) {
+    if (gachaTokens > 0) {
+      // Use a gacha token
+      setGachaTokens((prev) => prev - 1)
+      setShowGachaAnimation(true)
+      setTimeout(() => {
+        setShowGachaAnimation(false)
+        onBuySurvivor()
+      }, 1500)
+    } else if (zmbBalance >= survivorCost) {
+      // Use ZMB
       setShowGachaAnimation(true)
       setTimeout(() => {
         setShowGachaAnimation(false)
@@ -171,6 +229,16 @@ export function SurvivorPanel({
   const handleConfirmKill = () => {
     if (selectedSurvivor) {
       onKillSurvivor(selectedSurvivor.id)
+
+      // Increment gacha tokens
+      setGachaTokens((prev) => prev + 1)
+
+      // Set last gacha time and save to localStorage
+      const now = Date.now()
+      setLastGachaTime(now)
+      if (typeof window !== "undefined") {
+        localStorage.setItem("lastGachaTime", now.toString())
+      }
     }
     setShowKillConfirm(false)
     setSelectedSurvivor(null)
@@ -209,6 +277,15 @@ export function SurvivorPanel({
   }
 
   const handleRestClick = (survivor: Survivor) => {
+    // If trying to activate and already at max capacity, show warning
+    if (!survivor.isActive) {
+      const activeCount = survivors.filter((s) => s.isActive).length
+      if (activeCount >= maxActiveSurvivors) {
+        setShowMaxCapacityWarning(true)
+        return
+      }
+    }
+
     setSelectedSurvivor(survivor)
     setShowRestConfirm(true)
   }
@@ -284,7 +361,7 @@ export function SurvivorPanel({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-500">
               <AlertCircle className="w-5 h-5" />
-              Confirm Quick Sell
+              Confirm Gacha
             </DialogTitle>
             <DialogDescription className="text-slate-300 pt-2">
               Are you sure you want to quick sell your Survivor to the Gacha Box?
@@ -414,7 +491,7 @@ export function SurvivorPanel({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-blue-500">
               <BedDouble className="w-5 h-5" />
-              Confirm Rest
+              {selectedSurvivor?.isActive ? "Confirm Rest" : "Confirm Activate"}
             </DialogTitle>
             <DialogDescription className="text-slate-300 pt-2">
               {selectedSurvivor?.isActive
@@ -423,7 +500,7 @@ export function SurvivorPanel({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center gap-4 py-4">
-            {selectedSurvivor && selectedSurvivor.isActive && (
+            {selectedSurvivor && (
               <div className="bg-slate-700 p-3 rounded-lg w-full">
                 <div className="flex items-center gap-2 mb-2">
                   {(() => {
@@ -436,6 +513,16 @@ export function SurvivorPanel({
                   </Badge>
                 </div>
 
+                {selectedSurvivor.isActive && (
+                  <div className="bg-slate-600/50 p-2 rounded-lg mb-3 text-xs">
+                    <p className={hasBase ? "text-blue-300" : "text-yellow-300"}>
+                      {hasBase
+                        ? "Note: Resources will be depleted from your base, not inventory."
+                        : "Note: Without a base, resources will be depleted directly from your inventory."}
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-1 mb-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400">Current Health</span>
@@ -446,58 +533,46 @@ export function SurvivorPanel({
                   <Progress value={(selectedSurvivor.health / selectedSurvivor.maxHealth) * 100} className="h-1" />
                 </div>
 
-                <div className="bg-slate-800 p-2 rounded-lg">
-                  <p className="text-xs font-medium text-white mb-2">Cost:</p>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-yellow-400">ZMB</span>
-                    <span className="text-xs font-medium text-white">{getRestCost(selectedSurvivor).zmb}</span>
+                {!selectedSurvivor.isActive && (
+                  <div className="flex items-center justify-between text-xs mb-2">
+                    <span className="text-slate-400">Active Survivors</span>
+                    <span
+                      className={`${survivors.filter((s) => s.isActive).length >= maxActiveSurvivors ? "text-red-400" : "text-white"}`}
+                    >
+                      {survivors.filter((s) => s.isActive).length}/{maxActiveSurvivors}
+                    </span>
                   </div>
+                )}
 
-                  {Object.entries(getRestCost(selectedSurvivor).resources).map(([resource, amount]) => (
-                    <div key={resource} className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-slate-400 capitalize">{resource}</span>
-                      <span
-                        className={`text-xs font-medium ${
-                          resources[resource as keyof Resources] >= amount ? "text-white" : "text-red-400"
-                        }`}
-                      >
-                        {amount}
-                      </span>
+                {selectedSurvivor.isActive && (
+                  <div className="bg-slate-800 p-2 rounded-lg">
+                    <p className="text-xs font-medium text-white mb-2">Cost:</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-yellow-400">ZMB</span>
+                      <span className="text-xs font-medium text-white">{getRestCost(selectedSurvivor).zmb}</span>
                     </div>
-                  ))}
-                </div>
 
-                <div className="text-xs text-slate-400 mt-2">
-                  Your survivor will be unavailable while resting, but will gradually recover health.
-                </div>
-              </div>
-            )}
-
-            {selectedSurvivor && !selectedSurvivor.isActive && (
-              <div className="bg-slate-700 p-3 rounded-lg w-full">
-                <div className="flex items-center gap-2 mb-2">
-                  {(() => {
-                    const SpecialtyIcon = getSpecialtyIcon(selectedSurvivor.specialty)
-                    return <SpecialtyIcon className={`w-4 h-4 ${getSpecialtyColor(selectedSurvivor.specialty)}`} />
-                  })()}
-                  <span className="text-sm font-medium text-white">{selectedSurvivor.name}</span>
-                  <Badge variant="secondary" className="text-xs">
-                    Lv.{selectedSurvivor.level}
-                  </Badge>
-                </div>
-
-                <div className="space-y-1 mb-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Current Health</span>
-                    <span className="text-white">
-                      {selectedSurvivor.health}/{selectedSurvivor.maxHealth}
-                    </span>
+                    {Object.entries(getRestCost(selectedSurvivor).resources).map(([resource, amount]) => (
+                      <div key={resource} className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-slate-400 capitalize">{resource}</span>
+                        <span
+                          className={`text-xs font-medium ${
+                            resources[resource as keyof Resources] >= amount ? "text-white" : "text-red-400"
+                          }`}
+                        >
+                          {amount}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  <Progress value={(selectedSurvivor.health / selectedSurvivor.maxHealth) * 100} className="h-1" />
-                </div>
+                )}
 
                 <div className="text-xs text-slate-400 mt-2">
-                  Your survivor will return to active duty and be available for missions.
+                  {selectedSurvivor.isActive
+                    ? "Your survivor will be unavailable while resting, but will gradually recover health."
+                    : survivors.filter((s) => s.isActive).length >= maxActiveSurvivors
+                      ? "You've reached the maximum number of active survivors for your current base level."
+                      : "Your survivor will return to active duty and be available for missions."}
                 </div>
               </div>
             )}
@@ -509,9 +584,47 @@ export function SurvivorPanel({
             <Button
               className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-6"
               onClick={handleConfirmRest}
-              disabled={selectedSurvivor?.isActive && !canAffordRest(selectedSurvivor)}
+              disabled={
+                (selectedSurvivor?.isActive && !canAffordRest(selectedSurvivor)) ||
+                (!selectedSurvivor?.isActive && survivors.filter((s) => s.isActive).length >= maxActiveSurvivors)
+              }
             >
               {selectedSurvivor?.isActive ? "Rest" : "Activate"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Max Capacity Warning Dialog */}
+      <Dialog open={showMaxCapacityWarning} onOpenChange={setShowMaxCapacityWarning}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-yellow-500">
+              <AlertCircle className="w-5 h-5" />
+              Base Capacity Reached
+            </DialogTitle>
+            <DialogDescription className="text-slate-300 pt-2">
+              You've reached the maximum number of active survivors for your current base.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center gap-4 py-4">
+            <div className="bg-slate-700 p-3 rounded-lg w-full">
+              <div className="text-sm text-white mb-2">
+                Your level {Math.ceil(maxActiveSurvivors / 2)} base can only support {maxActiveSurvivors} active
+                survivors.
+              </div>
+              <div className="text-xs text-slate-400">
+                Upgrade your base to increase your survivor capacity. Each base level increases the number of survivors
+                you can have active at once.
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <Button
+              className="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-6"
+              onClick={() => setShowMaxCapacityWarning(false)}
+            >
+              Understood
             </Button>
           </div>
         </DialogContent>
@@ -522,25 +635,35 @@ export function SurvivorPanel({
         <h3 className="text-sm font-medium text-white mb-3">Marketplace</h3>
         <Card className="bg-slate-800 border-slate-700">
           <CardContent className="p-4 grid grid-cols-2 gap-4">
-            {/* Gacha Box */}
+            {/* Mystery Box */}
             <div className="flex flex-col items-center justify-center p-3 bg-slate-700/50 rounded-lg">
               <Package className={`w-8 h-8 mb-2 ${showGachaAnimation ? "animate-bounce" : ""} text-purple-400`} />
-              <span className="text-sm font-medium text-white mb-1">Gacha Box</span>
-              <Badge variant="secondary" className="mb-2">
-                {gachaBoxCount} Available
-              </Badge>
+              <span className="text-sm font-medium text-white mb-1">Mystery Box</span>
+              <div className="mb-2">
+                <button
+                  onClick={onShowCharacterPreview}
+                  className="group transition-all duration-200 focus:outline-none"
+                >
+                  <Badge
+                    variant="secondary"
+                    className="cursor-pointer group-hover:bg-purple-600 group-hover:text-white transition-colors"
+                  >
+                    {gachaBoxCount} Characters
+                  </Badge>
+                </button>
+              </div>
               <Button
                 size="sm"
                 className={`w-full flex items-center justify-center gap-1 ${
-                  gachaBoxCount > 0 && zmbBalance >= survivorCost
+                  gachaTokens > 0 || (gachaBoxCount > 0 && zmbBalance >= survivorCost)
                     ? "bg-purple-600 hover:bg-purple-700"
                     : "bg-slate-600 opacity-50 cursor-not-allowed"
                 } text-white`}
                 onClick={handleMint}
-                disabled={showGachaAnimation || gachaBoxCount === 0 || zmbBalance < survivorCost}
+                disabled={showGachaAnimation || gachaBoxCount === 0 || (gachaTokens === 0 && zmbBalance < survivorCost)}
               >
                 <Ticket className="w-3 h-3" />
-                <span>{survivorCost} ZMB</span>
+                {gachaTokens > 0 ? <span>Use Token ({gachaTokens})</span> : <span>{survivorCost} ZMB</span>}
               </Button>
             </div>
 
@@ -548,17 +671,12 @@ export function SurvivorPanel({
             <div className="flex flex-col items-center justify-center p-3 bg-slate-700/50 rounded-lg">
               <ShoppingCart className="w-8 h-8 mb-2 text-blue-400" />
               <span className="text-sm font-medium text-white mb-1">Secondary</span>
-              <div className="flex flex-col items-center gap-1 mb-2">
+              <div className="flex flex-col items-center mb-2">
                 <Badge variant="secondary" className="mb-0">
-                  {soldSurvivors.length} Available
+                  {soldSurvivors.length > 0
+                    ? `${soldSurvivors.length} · Floor: ${Math.min(...soldSurvivors.map((s) => s.price)).toLocaleString()} ZMB`
+                    : soldSurvivors.length}
                 </Badge>
-                {soldSurvivors.length > 0 ? (
-                  <span className="text-xs text-green-400 font-medium">
-                    Floor: {Math.min(...soldSurvivors.map((s) => s.price)).toLocaleString()} ZMB
-                  </span>
-                ) : (
-                  <span className="text-xs text-slate-400">No floor price yet</span>
-                )}
               </div>
               <Button
                 size="sm"
@@ -575,7 +693,16 @@ export function SurvivorPanel({
 
       {/* Your Survivorz Section */}
       <div>
-        <h3 className="text-sm font-medium text-white mb-3">Your Survivorz</h3>
+        <h3 className="text-sm font-medium text-white mb-1">Your Survivorz</h3>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs text-slate-400">Active Survivors</span>
+          <span
+            className={`text-xs ${survivors.filter((s) => s.isActive).length >= maxActiveSurvivors ? "text-red-400 font-medium" : "text-slate-300"}`}
+          >
+            {survivors.filter((s) => s.isActive).length}/{maxActiveSurvivors}
+          </span>
+        </div>
+
         {survivors.length === 0 ? (
           <Card className="bg-slate-800 border-slate-700">
             <CardContent className="p-4 text-center">
@@ -669,10 +796,16 @@ export function SurvivorPanel({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs bg-red-600 hover:bg-red-700 text-white border-red-700"
+                      className={`text-xs ${
+                        canUseGacha()
+                          ? "bg-red-600 hover:bg-red-700 text-white border-red-700"
+                          : "bg-slate-600 opacity-50 cursor-not-allowed text-white border-slate-700"
+                      }`}
                       onClick={() => handleKillClick(survivor)}
+                      disabled={!canUseGacha()}
+                      title={!canUseGacha() ? `Cooldown: ${gachaCooldownRemaining}` : "Convert to Gacha Token"}
                     >
-                      Kill
+                      {canUseGacha() ? "Gacha" : gachaCooldownRemaining}
                     </Button>
                     <Button
                       size="sm"

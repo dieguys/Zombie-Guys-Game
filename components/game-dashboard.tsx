@@ -3,7 +3,20 @@
 import { useState, useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Sun, Moon, Users, Shield, Wallet, Coins, ChevronDown, ChevronUp } from "lucide-react"
+import {
+  Sun,
+  Moon,
+  Users,
+  Shield,
+  Wallet,
+  Coins,
+  ChevronDown,
+  ChevronUp,
+  Sword,
+  Hammer,
+  Search,
+  Heart,
+} from "lucide-react"
 import type { GameState } from "../types/game"
 import type { Resources } from "../types/game"
 import { WalletIntegration } from "./wallet-integration"
@@ -11,15 +24,18 @@ import { ResourcePanel } from "./resource-panel"
 import { SurvivorPanel } from "./survivor-panel"
 import { BaseBuilder } from "./base-builder"
 import type { Survivor } from "../types/game"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 // Default initial game state
 const initialGameState: GameState = {
   isDay: true,
   dayCount: 1,
-  timeRemaining: 30, // Start with 30 seconds instead of 300
+  timeRemaining: 300,
   isIdle: false,
-  baseHealth: 100,
-  maxBaseHealth: 100,
+  baseHealth: 0, // Start with 0 base health (no base)
+  maxBaseHealth: 0, // Start with 0 max base health (no base)
+  hasBase: false, // Start without a base
   gems: 0, // Start with 0 SOL
   coins: 0, // Start with 0 ZMB
   survivors: [], // No active survivors initially
@@ -63,6 +79,60 @@ const healthRecoverySettings = {
   healthPerTick: 5, // 5 health points per tick
 }
 
+// Base level settings
+const baseLevels = [
+  {
+    level: 1,
+    name: "Survival Shelter",
+    maxSurvivors: 1,
+  },
+  {
+    level: 2,
+    name: "Fortified Outpost",
+    maxSurvivors: 2,
+  },
+  {
+    level: 3,
+    name: "Survivor Camp",
+    maxSurvivors: 3,
+  },
+  {
+    level: 4,
+    name: "Defensive Compound",
+    maxSurvivors: 4,
+  },
+  {
+    level: 5,
+    name: "Fortified Settlement",
+    maxSurvivors: 6,
+  },
+  {
+    level: 6,
+    name: "Survivor Stronghold",
+    maxSurvivors: 8,
+  },
+  {
+    level: 7,
+    name: "Walled Community",
+    maxSurvivors: 10,
+  },
+  {
+    level: 8,
+    name: "Fortified Township",
+    maxSurvivors: 12,
+  },
+  {
+    level: 9,
+    name: "Survivor Citadel",
+    maxSurvivors: 15,
+  },
+  {
+    level: 10,
+    name: "Apocalypse Fortress",
+    maxSurvivors: 20,
+  },
+]
+
 export default function GameDashboard() {
   const [showRates, setShowRates] = useState(false)
   const ratesRef = useRef<HTMLDivElement>(null)
@@ -97,7 +167,52 @@ export default function GameDashboard() {
   const [gachaBoxCount, setGachaBoxCount] = useState(gachaBoxSettings.initialSurvivors)
   const [baseLevel, setBaseLevel] = useState(1)
   const [killsConfirmed, setKillsConfirmed] = useState(0)
-  const [dayLength, setDayLength] = useState(30) // Start with 30 seconds
+
+  // Add a new state for character preview
+  const [showCharacterPreview, setShowCharacterPreview] = useState(false)
+
+  // Add a function to generate all 10 characters for preview with fixed stats
+  const generateCharacterPreview = () => {
+    const names = ["Alex", "Maya", "Zoe", "Sam", "Riley", "Jordan", "Taylor", "Casey", "Morgan", "Quinn"]
+    const specialties = ["fighter", "builder", "scavenger", "medic"] as const
+
+    return names.map((name, index) => {
+      // Assign specialties in a pattern to ensure diversity
+      const specialty = specialties[index % specialties.length]
+
+      // Base stats - fixed values instead of random
+      let attack = 15
+      let defense = 10
+      const health = 90
+
+      // Adjust stats based on specialty
+      if (specialty === "fighter") {
+        attack = 25 // Fighters get high attack
+        defense = 12
+      } else if (specialty === "builder") {
+        attack = 12
+        defense = 20 // Builders get high defense
+      } else if (specialty === "scavenger") {
+        attack = 18 // Scavengers get balanced stats
+        defense = 15
+      } else if (specialty === "medic") {
+        attack = 10 // Medics get lower combat stats
+        defense = 12
+      }
+
+      return {
+        id: `preview-${index}`,
+        name,
+        level: 1,
+        health,
+        maxHealth: 100,
+        attack,
+        defense,
+        specialty,
+        isActive: true,
+      }
+    })
+  }
 
   // Save game state to session storage whenever it changes
   useEffect(() => {
@@ -109,39 +224,16 @@ export default function GameDashboard() {
   // Game timer
   useEffect(() => {
     const timer = setInterval(() => {
-      setGameState((prev) => {
-        // Check if time is up
-        if (prev.timeRemaining <= 0) {
-          // Day/night transition
-          const newIsDay = !prev.isDay
-          const newDayCount = prev.dayCount + (prev.isDay ? 1 : 0)
-
-          // Calculate new day length when transitioning to a new day
-          let newDayLength = dayLength
-          if (newIsDay && newDayCount > prev.dayCount) {
-            // Increase day length by 30 seconds each day, up to 5 minutes (300 seconds)
-            newDayLength = Math.min(30 * newDayCount, 300)
-            setDayLength(newDayLength)
-          }
-
-          return {
-            ...prev,
-            timeRemaining: newDayLength, // Use the new day length
-            isDay: newIsDay,
-            dayCount: newDayCount,
-          }
-        }
-
-        // Just decrement time
-        return {
-          ...prev,
-          timeRemaining: prev.timeRemaining - 1,
-        }
-      })
+      setGameState((prev) => ({
+        ...prev,
+        timeRemaining: prev.timeRemaining > 0 ? prev.timeRemaining - 1 : 300,
+        isDay: prev.isDay ? prev.isDay : !prev.isDay,
+        dayCount: prev.timeRemaining > 0 ? prev.dayCount : prev.dayCount + (prev.isDay ? 1 : 0),
+      }))
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [dayLength])
+  }, [])
 
   // Health recovery timer for resting survivors
   useEffect(() => {
@@ -215,18 +307,19 @@ export default function GameDashboard() {
   }
 
   const calculateBaseHealth = () => {
-    // Base health is now the sum of all resources
-    const totalHealth =
-      gameState.resources.wood +
-      gameState.resources.metal +
-      gameState.resources.food +
-      gameState.resources.medicine +
-      gameState.resources.ammunition
+    if (!gameState.hasBase) {
+      return { totalHealth: 0, totalMaxHealth: 0 }
+    }
 
-    // Max health scales with base level
-    const baseMaxHealth = baseLevel * 500 // 500 HP per level
+    // Get current base data
+    const currentBase = baseLevels[baseLevel - 1]
 
-    return { totalHealth, totalMaxHealth: baseMaxHealth }
+    // Calculate max base health based on base level
+    const maxHealth = 100 + (baseLevel - 1) * 50
+
+    const currentHealth = gameState.baseHealth
+
+    return { totalHealth: currentHealth, totalMaxHealth: Math.round(maxHealth) }
   }
 
   const { totalHealth, totalMaxHealth } = calculateBaseHealth()
@@ -312,21 +405,49 @@ export default function GameDashboard() {
     })
   }
 
-  // Handle repairing the base
-  const handleRepairBase = (cost: { zmb: number; resources: Partial<Resources> }) => {
+  // Handle building a base (new function)
+  const handleBuildBase = (cost: { zmb: number; resources: Partial<Resources> }) => {
     setGameState((prev) => {
-      // Calculate current total resources as health
-      const currentHealth =
-        prev.resources.wood +
-        prev.resources.metal +
-        prev.resources.food +
-        prev.resources.medicine +
-        prev.resources.ammunition
+      // Deduct resources and ZMB
+      const newResources = { ...prev.resources }
+      Object.entries(cost.resources).forEach(([resource, amount]) => {
+        newResources[resource as keyof Resources] -= amount
+      })
+
+      // Set base health to max for level 1
+      const maxHealth = 100 // Level 1 base health
 
       return {
         ...prev,
         coins: prev.coins - cost.zmb,
-        baseHealth: currentHealth, // Set base health to current resource total
+        resources: newResources,
+        hasBase: true,
+        baseHealth: maxHealth,
+        maxBaseHealth: maxHealth,
+      }
+    })
+
+    // Set base level to 1
+    setBaseLevel(1)
+  }
+
+  // Handle repairing the base
+  const handleRepairBase = (cost: { zmb: number; resources: Partial<Resources> }) => {
+    setGameState((prev) => {
+      // Deduct resources and ZMB
+      const newResources = { ...prev.resources }
+      Object.entries(cost.resources).forEach(([resource, amount]) => {
+        newResources[resource as keyof Resources] -= amount
+      })
+
+      // Calculate max health based on base level
+      const maxHealth = 100 + (baseLevel - 1) * 50
+
+      return {
+        ...prev,
+        coins: prev.coins - cost.zmb,
+        resources: newResources,
+        baseHealth: maxHealth, // Fully repair the base
       }
     })
   }
@@ -340,10 +461,15 @@ export default function GameDashboard() {
         newResources[resource as keyof Resources] -= amount
       })
 
+      // Calculate new max health based on new level
+      const maxHealth = 100 + (level - 1) * 50
+
       return {
         ...prev,
         coins: prev.coins - cost.zmb,
         resources: newResources,
+        baseHealth: maxHealth, // Set to full health after upgrade
+        maxBaseHealth: maxHealth,
       }
     })
 
@@ -426,16 +552,45 @@ export default function GameDashboard() {
     const specialties = ["builder", "fighter", "scavenger", "medic"] as const
     const names = ["Alex", "Maya", "Zoe", "Sam", "Riley", "Jordan", "Taylor", "Casey", "Morgan", "Quinn"]
 
+    // Check if this is the first survivor (should be active) or additional survivors (should be resting)
+    const isFirstSurvivor = gameState.survivors.length === 0
+    const activeCount = gameState.survivors.filter((s) => s.isActive).length
+    const maxActive = gameState.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1 // If no base, only 1 active survivor
+    const shouldBeActive = isFirstSurvivor || activeCount < maxActive
+
+    // Randomly select a specialty and name
+    const specialty = specialties[Math.floor(Math.random() * specialties.length)]
+    const name = names[Math.floor(Math.random() * names.length)]
+
+    // Base stats
+    let attack = 10 + Math.floor(Math.random() * 15)
+    let defense = 5 + Math.floor(Math.random() * 15)
+
+    // Adjust stats based on specialty
+    if (specialty === "fighter") {
+      attack = 20 + Math.floor(Math.random() * 10) // Fighters get 20-30 attack
+    } else if (specialty === "builder") {
+      defense = 15 + Math.floor(Math.random() * 10) // Builders get 15-25 defense
+    } else if (specialty === "scavenger") {
+      // Scavengers get balanced stats
+      attack = 15 + Math.floor(Math.random() * 10)
+      defense = 10 + Math.floor(Math.random() * 10)
+    } else if (specialty === "medic") {
+      // Medics get slightly lower combat stats
+      attack = 8 + Math.floor(Math.random() * 12)
+      defense = 10 + Math.floor(Math.random() * 10)
+    }
+
     const newSurvivor = {
       id: `survivor-${Date.now()}`,
-      name: names[Math.floor(Math.random() * names.length)],
+      name,
       level: 1,
       health: 80 + Math.floor(Math.random() * 20), // 80-100 health
       maxHealth: 100,
-      attack: 10 + Math.floor(Math.random() * 15), // 10-25 attack
-      defense: 5 + Math.floor(Math.random() * 15), // 5-20 defense
-      specialty: specialties[Math.floor(Math.random() * specialties.length)],
-      isActive: true,
+      attack,
+      defense,
+      specialty,
+      isActive: shouldBeActive, // Only active if it's the first survivor or we're under the limit
     }
 
     setGameState((prev) => ({
@@ -497,6 +652,68 @@ export default function GameDashboard() {
     setKillsConfirmed((prev) => prev + 1)
   }
 
+  // Calculate resource cost for resting based on survivor specialty
+  const calculateRestCost = (survivor: Survivor) => {
+    const healthPercentage = survivor.health / survivor.maxHealth
+    const healthMissing = 1 - healthPercentage
+
+    // Base resource costs
+    let resourceCost: Partial<Resources> = {}
+
+    // Adjust costs based on specialty
+    switch (survivor.specialty) {
+      case "builder":
+        resourceCost = {
+          wood: Math.max(1, Math.round(10 * healthMissing)), // Builders use more wood
+          metal: Math.max(1, Math.round(5 * healthMissing)),
+          food: Math.max(1, Math.round(3 * healthMissing)),
+          medicine: Math.max(1, Math.round(1 * healthMissing)),
+          ammunition: 0, // Builders don't use ammunition
+        }
+        break
+      case "fighter":
+        resourceCost = {
+          wood: Math.max(1, Math.round(2 * healthMissing)),
+          metal: Math.max(1, Math.round(3 * healthMissing)),
+          food: Math.max(1, Math.round(5 * healthMissing)), // Fighters eat more
+          medicine: Math.max(1, Math.round(2 * healthMissing)),
+          ammunition: Math.max(1, Math.round(5 * healthMissing)), // Fighters use more ammunition
+        }
+        break
+      case "scavenger":
+        resourceCost = {
+          wood: Math.max(1, Math.round(3 * healthMissing)),
+          metal: Math.max(1, Math.round(2 * healthMissing)),
+          food: Math.max(1, Math.round(4 * healthMissing)),
+          medicine: Math.max(1, Math.round(1 * healthMissing)),
+          ammunition: Math.max(1, Math.round(3 * healthMissing)),
+        }
+        break
+      case "medic":
+        resourceCost = {
+          wood: Math.max(1, Math.round(2 * healthMissing)),
+          metal: Math.max(1, Math.round(2 * healthMissing)),
+          food: Math.max(1, Math.round(3 * healthMissing)),
+          medicine: Math.max(1, Math.round(6 * healthMissing)), // Medics use more medicine
+          ammunition: Math.max(1, Math.round(1 * healthMissing)),
+        }
+        break
+      default:
+        resourceCost = {
+          wood: Math.max(1, Math.round(3 * healthMissing)),
+          metal: Math.max(1, Math.round(3 * healthMissing)),
+          food: Math.max(1, Math.round(3 * healthMissing)),
+          medicine: Math.max(1, Math.round(3 * healthMissing)),
+          ammunition: Math.max(1, Math.round(3 * healthMissing)),
+        }
+    }
+
+    // ZMB cost is the same regardless of specialty
+    const zmbCost = Math.round(20 * healthMissing)
+
+    return { zmb: zmbCost, resources: resourceCost }
+  }
+
   // Handle resting a survivor
   const handleRestSurvivor = (survivorId: string, cost: { zmb: number; resources: Partial<Resources> }) => {
     setGameState((prev) => {
@@ -518,17 +735,47 @@ export default function GameDashboard() {
 
         // Update resources
         const newResources = { ...prev.resources }
-        Object.entries(cost.resources).forEach(([resource, amount]) => {
-          newResources[resource as keyof Resources] -= amount
-        })
 
-        return {
-          ...prev,
-          coins: prev.coins - cost.zmb,
-          resources: newResources,
-          survivors: newSurvivors,
+        // If player has a base, deduct from base health instead of inventory
+        if (prev.hasBase) {
+          // Calculate total resource cost
+          let totalResourceCost = 0
+          Object.values(cost.resources).forEach((amount) => {
+            totalResourceCost += amount
+          })
+
+          // Deduct from base health
+          const newBaseHealth = Math.max(0, prev.baseHealth - totalResourceCost)
+
+          return {
+            ...prev,
+            coins: prev.coins - cost.zmb,
+            baseHealth: newBaseHealth,
+            survivors: newSurvivors,
+          }
+        } else {
+          // No base, deduct directly from inventory
+          Object.entries(cost.resources).forEach(([resource, amount]) => {
+            newResources[resource as keyof Resources] = Math.max(0, newResources[resource as keyof Resources] - amount)
+          })
+
+          return {
+            ...prev,
+            coins: prev.coins - cost.zmb,
+            resources: newResources,
+            survivors: newSurvivors,
+          }
         }
       } else {
+        // Check if activating would exceed the max active survivors limit
+        const currentActiveCount = prev.survivors.filter((s) => s.isActive).length
+        const maxActive = prev.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1 // If no base, only 1 active survivor
+
+        if (currentActiveCount >= maxActive) {
+          // Cannot activate more survivors
+          return prev
+        }
+
         // If resting, set to active (no cost)
         newSurvivors[survivorIndex] = {
           ...survivor,
@@ -560,6 +807,12 @@ export default function GameDashboard() {
     // Check if player has enough ZMB
     if (gameState.coins < price) return
 
+    // Check if this is the first survivor (should be active) or additional survivors (should be resting)
+    const isFirstSurvivor = gameState.survivors.length === 0
+    const activeCount = gameState.survivors.filter((s) => s.isActive).length
+    const maxActive = gameState.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1 // If no base, only 1 active survivor
+    const shouldBeActive = isFirstSurvivor || activeCount < maxActive
+
     // Generate a new survivor based on the purchased data
     const newSurvivor = {
       id: `survivor-${Date.now()}`,
@@ -570,7 +823,7 @@ export default function GameDashboard() {
       attack: survivorData.attack || 15,
       defense: survivorData.defense || 10,
       specialty: survivorData.specialty || "fighter",
-      isActive: true,
+      isActive: shouldBeActive, // Only active if it's the first survivor or we're under the limit
     }
 
     // Update game state
@@ -579,6 +832,17 @@ export default function GameDashboard() {
       coins: prev.coins - price,
       survivors: [...prev.survivors, newSurvivor],
     }))
+  }
+
+  // New function to handle going to night
+  const handleGoToNight = () => {
+    // Only set timeRemaining to 0 if it's currently day
+    if (gameState.isDay) {
+      setGameState((prev) => ({
+        ...prev,
+        timeRemaining: 0,
+      }))
+    }
   }
 
   return (
@@ -691,19 +955,38 @@ export default function GameDashboard() {
           </Badge>
         </div>
 
-        {/* Base Health */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1">
-              <Shield className="w-3 h-3" />
-              Base Health
-            </span>
-            <span>
-              {gameState.baseHealth}/{totalMaxHealth}
-            </span>
+        {/* Base Health - Only show if player has a base */}
+        {gameState.hasBase && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1">
+                <Shield className="w-3 h-3" />
+                Base Health
+              </span>
+              <span>
+                {totalHealth}/{totalMaxHealth}
+              </span>
+            </div>
+            <Progress
+              value={totalMaxHealth > 0 ? (totalHealth / totalMaxHealth) * 100 : 0}
+              className={`h-2 ${
+                totalHealth / totalMaxHealth > 0.7
+                  ? "bg-green-500"
+                  : totalHealth / totalMaxHealth > 0.3
+                    ? "bg-yellow-500"
+                    : "bg-red-500"
+              }`}
+            />
           </div>
-          <Progress value={totalMaxHealth > 0 ? (gameState.baseHealth / totalMaxHealth) * 100 : 0} className="h-2" />
-        </div>
+        )}
+
+        {/* No Base Message - Show if player doesn't have a base */}
+        {!gameState.hasBase && (
+          <div className="bg-slate-700/50 p-2 rounded-lg text-xs text-center">
+            <span className="text-yellow-400">No Base Established</span>
+            <p className="text-slate-400 mt-1">Build a base to increase survivor capacity and resource efficiency</p>
+          </div>
+        )}
       </div>
 
       {/* Navigation Tabs */}
@@ -746,23 +1029,103 @@ export default function GameDashboard() {
               killsConfirmed={killsConfirmed}
               onRepairBase={handleRepairBase}
               onUpgradeBase={handleUpgradeBase}
+              onBuildBase={handleBuildBase}
+              hasBase={gameState.hasBase}
             />
           </div>
         )}
 
         {activeTab === "survivors" && (
           <div className="p-4">
-            <SurvivorPanel
-              survivors={gameState.survivors}
-              gachaBoxCount={gachaBoxCount}
-              zmbBalance={gameState.coins}
-              resources={gameState.resources}
-              onBuySurvivor={handleBuySurvivor}
-              onSellSurvivor={handleSellSurvivor}
-              onKillSurvivor={handleKillSurvivor}
-              onRestSurvivor={handleRestSurvivor}
-              onBuyFromSecondary={handleBuyFromSecondary}
-            />
+            {showCharacterPreview ? (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-medium text-white">Character Preview</h3>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowCharacterPreview(false)}
+                    className="text-xs"
+                  >
+                    Back to Survivors
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {generateCharacterPreview().map((character) => (
+                    <Card key={character.id} className="bg-slate-800 border-slate-700">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm text-white flex items-center gap-2">
+                            {character.specialty === "fighter" ? (
+                              <Sword className="w-4 h-4 text-red-400" />
+                            ) : character.specialty === "builder" ? (
+                              <Hammer className="w-4 h-4 text-blue-400" />
+                            ) : character.specialty === "scavenger" ? (
+                              <Search className="w-4 h-4 text-green-400" />
+                            ) : (
+                              <Heart className="w-4 h-4 text-pink-400" />
+                            )}
+                            {character.name}
+                            <Badge variant="secondary" className="text-xs">
+                              Lv.{character.level}
+                            </Badge>
+                          </CardTitle>
+                          <Badge variant="default">
+                            {character.specialty.charAt(0).toUpperCase() + character.specialty.slice(1)}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400 flex items-center gap-1">
+                              <Sword className="w-3 h-3" />
+                              Attack
+                            </span>
+                            <span className="text-white font-medium">{character.attack}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400 flex items-center gap-1">
+                              <Shield className="w-3 h-3" />
+                              Defense
+                            </span>
+                            <span className="text-white font-medium">{character.defense}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400">Health</span>
+                            <span className="text-white">
+                              {character.health}/{character.maxHealth}
+                            </span>
+                          </div>
+                          <Progress value={(character.health / character.maxHealth) * 100} className="h-1" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <SurvivorPanel
+                  survivors={gameState.survivors}
+                  gachaBoxCount={gachaBoxCount}
+                  zmbBalance={gameState.coins}
+                  resources={gameState.resources}
+                  maxActiveSurvivors={gameState.hasBase ? baseLevels[baseLevel - 1].maxSurvivors : 1}
+                  onBuySurvivor={handleBuySurvivor}
+                  onSellSurvivor={handleSellSurvivor}
+                  onKillSurvivor={handleKillSurvivor}
+                  onRestSurvivor={handleRestSurvivor}
+                  onBuyFromSecondary={handleBuyFromSecondary}
+                  hasBase={gameState.hasBase}
+                  calculateRestCost={calculateRestCost}
+                  onShowCharacterPreview={() => setShowCharacterPreview(true)}
+                />
+              </>
+            )}
           </div>
         )}
 
@@ -773,6 +1136,7 @@ export default function GameDashboard() {
               onTopUp={handleTopUp}
               onBuyZMB={handleBuyZMB}
               onClaimBonus={handleClaimBonus}
+              onGoToNight={handleGoToNight}
             />
           </div>
         )}
